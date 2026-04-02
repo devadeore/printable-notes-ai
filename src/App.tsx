@@ -22,6 +22,7 @@ const STEPS = [
 export default function App() {
   const [step, setStep] = useState(0); // 0 is landing page
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
   const { 
     files, pages, setPages, loadFiles, isProcessing, 
     addBlankSlide, removeFile, reorderPages 
@@ -66,10 +67,17 @@ export default function App() {
     }
   }, [step]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      loadFiles(Array.from(e.target.files));
-      setStep(2);
+      setIsInitialLoading(true);
+      try {
+        await loadFiles(Array.from(e.target.files));
+        setStep(2);
+      } catch (error) {
+        console.error("Upload failed", error);
+      } finally {
+        setIsInitialLoading(false);
+      }
     }
   };
 
@@ -154,10 +162,34 @@ export default function App() {
     <div className="min-h-screen bg-[#020203] text-slate-200 font-sans selection:bg-sky-500/30 overflow-x-hidden">
       {/* Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-sky-500/10 blur-[120px] rounded-full" />
-        <div className="absolute top-[40%] -right-[10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full" />
-        <div className="absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
+        <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] bg-sky-500/10 blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] bg-indigo-500/10 blur-[140px] rounded-full" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-[20%] left-[10%] w-[50%] h-[50%] bg-purple-500/10 blur-[140px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-blue-400/5 blur-[100px] rounded-full" />
       </div>
+
+      {/* Uploading Overlay */}
+      <AnimatePresence>
+        {isInitialLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center space-y-6"
+          >
+            <div className="relative">
+              <div className="w-24 h-24 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Printer size={32} className="text-sky-400 animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold text-white tracking-tight">Uploading PDF...</h3>
+              <p className="text-slate-400 text-sm">Processing large files may take a moment.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Navbar */}
       <nav className="border-b border-white/5 bg-black/20 backdrop-blur-2xl fixed top-0 w-full z-50">
@@ -215,26 +247,43 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="relative rounded-[3rem] overflow-hidden border border-white/10 bg-white/5 backdrop-blur-3xl aspect-video flex items-center justify-center group shadow-[0_0_100px_rgba(56,189,248,0.1)]">
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10" />
+              <div className="relative rounded-[3rem] overflow-hidden border border-white/10 bg-white/5 backdrop-blur-3xl aspect-video flex items-center justify-center group shadow-[0_0_100px_rgba(56,189,248,0.15)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-transparent to-indigo-500/20 z-10" />
                 <img 
-                  src="https://picsum.photos/seed/notes/1200/800" 
-                  alt="Preview" 
-                  className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700"
+                  src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=2070" 
+                  alt="Professional Workspace" 
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute flex items-center gap-8">
-                   <div className="w-24 h-32 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 flex items-center justify-center">
-                      <Monitor className="text-white/20" size={40} />
-                   </div>
-                   <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl">
-                      <Printer className="text-white" size={32} />
-                   </div>
-                   <div className="w-24 h-32 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 flex flex-col gap-2 p-2">
-                      <div className="h-2 w-full bg-white/10 rounded" />
-                      <div className="h-2 w-2/3 bg-white/10 rounded" />
-                      <div className="mt-auto h-12 w-full bg-white/5 rounded" />
-                   </div>
+                <div className="absolute inset-0 bg-black/20 z-20" />
+                <div className="absolute z-30 flex items-center gap-8">
+                   <motion.div 
+                     initial={{ x: -20, opacity: 0 }}
+                     animate={{ x: 0, opacity: 1 }}
+                     transition={{ delay: 0.5 }}
+                     className="w-24 h-32 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-2xl"
+                   >
+                      <Monitor className="text-sky-400/60" size={40} />
+                   </motion.div>
+                   <motion.div 
+                     initial={{ scale: 0.8, opacity: 0 }}
+                     animate={{ scale: 1, opacity: 1 }}
+                     transition={{ delay: 0.7 }}
+                     className="w-20 h-20 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-[0_0_40px_rgba(56,189,248,0.5)]"
+                   >
+                      <Printer className="text-white" size={36} />
+                   </motion.div>
+                   <motion.div 
+                     initial={{ x: 20, opacity: 0 }}
+                     animate={{ x: 0, opacity: 1 }}
+                     transition={{ delay: 0.9 }}
+                     className="w-24 h-32 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex flex-col gap-3 p-3 shadow-2xl"
+                   >
+                      <div className="h-2 w-full bg-sky-400/20 rounded-full" />
+                      <div className="h-2 w-4/5 bg-sky-400/20 rounded-full" />
+                      <div className="h-2 w-3/4 bg-sky-400/20 rounded-full" />
+                      <div className="mt-auto h-10 w-full bg-sky-500/10 rounded-xl border border-sky-500/20" />
+                   </motion.div>
                 </div>
               </div>
 
